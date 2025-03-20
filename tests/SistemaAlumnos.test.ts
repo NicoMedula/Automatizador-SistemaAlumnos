@@ -8,6 +8,12 @@ const USER_SELECTOR = '#ctl00_ContentPlaceHolder1_TextBox1';
 const PASSWORD_SELECTOR = '[name="ctl00$ContentPlaceHolder1$Clave"]';
 const LOGIN_BUTTON_SELECTOR = '[name="ctl00$ContentPlaceHolder1$ImageButton1"]';
 const ERROR_MESSAGE_SELECTOR = '#ctl00_ContentPlaceHolder1_Label2'; // Mensaje de error en el login
+const CURSADO_BUTTON = '#ctl00_PanelCursado_header';
+const INASISTENCIAS_URL = 'https://sistemacuenca.ucp.edu.ar/alumnosnotas/Proteccion/Inasistencias.aspx?Sel=1';
+const INASISTENCIAS_SELECTOR = '#ctl00_ContentPlaceHolder1_GridView1 td[align="center"]';
+const TABLE_SELECTOR = '#ctl00_ContentPlaceHolder1_GridView1';
+const ROWS_SELECTOR = `${TABLE_SELECTOR} tbody tr`;
+
 
 test('Caso exitoso: Ingreso correcto al sistema', async ({ page }) => {
     await page.goto(URL);
@@ -17,7 +23,36 @@ test('Caso exitoso: Ingreso correcto al sistema', async ({ page }) => {
     await page.click(LOGIN_BUTTON_SELECTOR);
 
     //URL esperada después del login exitoso
-    await expect(page).toHaveURL("https://sistemacuenca.ucp.edu.ar/alumnosnotas/AlumnoDeudor.aspx?mensaje=Error%20al%20verificar");
+    await expect(page).toHaveURL("https://sistemacuenca.ucp.edu.ar/alumnosnotas/Proteccion/Inicio.aspx");
+
+    // 2. Click en "Cursado"
+    await page.click(CURSADO_BUTTON);
+    
+    // 3. Navegar a la página de inasistencias
+    await page.goto(INASISTENCIAS_URL);
+
+    // 4. Extraer todas las filas de la tabla
+    const rows = await page.$$(ROWS_SELECTOR);
+
+    console.log(`Se encontraron ${rows.length} filas en la tabla de inasistencias:`);
+
+    for (const row of rows) {
+        // Obtener todas las celdas de la fila
+        const cells = await row.$$('td');
+
+        // Si hay al menos dos columnas (materia + inasistencia)
+        if (cells.length > 1) {
+            // Extraer el nombre de la materia (columna 1) y porcentaje de inasistencia (última columna)
+            const materia = await cells[0].textContent();
+            const inasistencia = await cells[cells.length - 1].textContent();
+
+            console.log(`Materia: ${materia?.trim()} - Inasistencia: ${inasistencia?.trim()}`);
+
+            // Validación: asegurarse de que la inasistencia tiene un formato válido
+            expect(inasistencia).not.toBeNull();
+            expect(inasistencia).toMatch(/\d+(\.\d+)?\s?%/); // Expresión para validar formato de porcentaje
+        }
+    } 
 });
 
 test('Caso fallido: Intento de ingreso con credenciales incorrectas', async ({ page }) => {
