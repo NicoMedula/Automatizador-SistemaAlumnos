@@ -1,0 +1,13 @@
+{
+  "compilerOptions": {
+    "outDir": "./dist",  
+    "module": "CommonJS",
+    "target": "ES6",
+    "strict": true,
+    "rootDir": "./tests",
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true
+  },
+  "include": ["tests"]
+}
