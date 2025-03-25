@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import * as dotenv from 'dotenv';
+import nodemailer from 'nodemailer';
 
 dotenv.config();
 
@@ -14,6 +15,29 @@ const INASISTENCIAS_SELECTOR = '#ctl00_ContentPlaceHolder1_GridView1 td[align="c
 const TABLE_SELECTOR = '#ctl00_ContentPlaceHolder1_GridView1';
 const ROWS_SELECTOR = `${TABLE_SELECTOR} tbody tr`;
 
+/*async function sendEmail(subject: string, body: string) {
+    const transporter = nodemailer.createTransport({
+        host: "smtp.office365.com",
+        port: 587,
+        secure: false, // No usar SSL, sino STARTTLS
+        auth: {
+            user: process.env.EMAIL_USER,
+            pass: process.env.EMAIL_PASS,
+        },
+        tls: {
+            rejectUnauthorized: false, // Permitir certificados no verificados
+        },
+    });
+
+    await transporter.sendMail({
+        from: `"Sistema Alumnos" <${process.env.EMAIL_USER}>`,
+        to: process.env.EMAIL_TO,
+        subject,
+        html: body,
+    });
+
+    console.log("📧 Email enviado correctamente desde Hotmail!");
+} */
 
 test('Caso exitoso: Ingreso correcto al sistema', async ({ page }) => {
     await page.goto(URL);
@@ -27,12 +51,13 @@ test('Caso exitoso: Ingreso correcto al sistema', async ({ page }) => {
 
     // 2. Click en "Cursado"
     await page.click(CURSADO_BUTTON);
-    
+
     // 3. Navegar a la página de inasistencias
     await page.goto(INASISTENCIAS_URL);
 
     // 4. Extraer todas las filas de la tabla
     const rows = await page.$$(ROWS_SELECTOR);
+    let emailBody = `<h2>📋 Resumen de Inasistencias</h2><ul>`;
 
     console.log(`Se encontraron ${rows.length} filas en la tabla de inasistencias:`);
 
@@ -51,8 +76,12 @@ test('Caso exitoso: Ingreso correcto al sistema', async ({ page }) => {
             // Validación: asegurarse de que la inasistencia tiene un formato válido
             expect(inasistencia).not.toBeNull();
             expect(inasistencia).toMatch(/\d+(\.\d+)?\s?%/); // Expresión para validar formato de porcentaje
+            emailBody += `<li><strong>${materia?.trim()}:</strong> ${inasistencia?.trim()}</li>`;
         }
     } 
+    emailBody += `</ul>`;
+     // 5. Enviar correo
+     //await sendEmail("Reporte de Inasistencias", emailBody);
 });
 
 test('Caso fallido: Intento de ingreso con credenciales incorrectas', async ({ page }) => {
